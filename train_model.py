@@ -18,7 +18,6 @@ x_test_noisy = x_test + noise_factor * np.random.normal(loc=0.0, scale=1.0, size
 x_train_noisy = np.clip(x_train_noisy, 0., 1.)
 x_test_noisy = np.clip(x_test_noisy, 0., 1.)
 
-
 input_img = Input(shape=(28, 28, 1))  # adapt this if using `channels_first` image data format
 
 x = Conv2D(3, (3, 3), activation='relu', padding='same')(input_img)

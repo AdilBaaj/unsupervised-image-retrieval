@@ -1,4 +1,4 @@
-from keras.layers import Input, Conv2D, MaxPooling2D, UpSampling2D
+from keras.layers import Input, Conv2D, MaxPooling2D, UpSampling2D, ZeroPadding2D
 from keras.models import Model
 from keras.callbacks import TensorBoard
 from keras.datasets import mnist
@@ -18,29 +18,36 @@ x_test_noisy = x_test + noise_factor * np.random.normal(loc=0.0, scale=1.0, size
 x_train_noisy = np.clip(x_train_noisy, 0., 1.)
 x_test_noisy = np.clip(x_test_noisy, 0., 1.)
 
-input_img = Input(shape=(28, 28, 1))  # adapt this if using `channels_first` image data format
 
-x = Conv2D(3, (3, 3), activation='relu', padding='same')(input_img)
-x = MaxPooling2D((2, 2), padding='same')(x)
-x = Conv2D(1, (3, 3), activation='relu', padding='same')(x)
-encoded = MaxPooling2D((1, 14), padding='same', name='encoder')(x)
+def train_model():
+    input_img = Input(shape=(28, 28, 1))  # adapt this if using `channels_first` image data format
+    x = Conv2D(16, (3, 3), activation='relu', padding='same')(input_img)
+    x = MaxPooling2D((2, 2), padding='same')(x)
+    x = Conv2D(8, (3, 3), activation='relu', padding='same')(x)
+    x = MaxPooling2D((2, 2), padding='same')(x)
+    x = Conv2D(8, (3, 3), activation='relu', padding='same')(x)
+    encoded = MaxPooling2D((2, 2), padding='same', name='encoder')(x)
 
-# at this point the representation is (14, 1, 1)
+    # at this point the representation is (4, 4, 8) i.e. 128-dimensional
 
-x = Conv2D(1, (3, 1), activation='relu', padding='same')(encoded)
-x = UpSampling2D((1, 14))(x)
-x = Conv2D(1, (3, 3), activation='relu', padding='same')(x)
-x = UpSampling2D((2, 2))(x)
-decoded = Conv2D(1, (3, 3), activation='sigmoid', padding='same')(x)
+    x = Conv2D(8, (3, 3), activation='relu', padding='same')(encoded)
+    x = UpSampling2D((2, 2))(x)
+    x = Conv2D(8, (3, 3), activation='relu', padding='same')(x)
+    x = UpSampling2D((2, 2))(x)
+    x = Conv2D(16, (3, 3), activation='relu')(x)
+    x = UpSampling2D((2, 2))(x)
+    decoded = Conv2D(1, (3, 3), activation='sigmoid', padding='same')(x)
 
-autoencoder = Model(input_img, decoded)
-autoencoder.compile(optimizer='adadelta', loss='binary_crossentropy')
+    autoencoder = Model(input_img, decoded)
+    autoencoder.compile(optimizer='adadelta', loss='binary_crossentropy')
 
-autoencoder.fit(x_train_noisy, x_train,
-                epochs=20,
-                batch_size=128,
-                shuffle=True,
-                validation_data=(x_test_noisy, x_test),
-                callbacks=[TensorBoard(log_dir='/tmp/tb', histogram_freq=0, write_graph=False)])
+    autoencoder.fit(x_train_noisy, x_train,
+                    epochs=20,
+                    batch_size=128,
+                    shuffle=True,
+                    validation_data=(x_test_noisy, x_test),
+                    callbacks=[TensorBoard(log_dir='/tmp/tb', histogram_freq=0, write_graph=False)])
 
-autoencoder.save('mnist.h5')
+    autoencoder.save('autoencoder.h5')
+
+train_model()

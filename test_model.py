@@ -48,7 +48,7 @@ def retrieve_closest_elements(test_code, test_label, learned_codes):
     distance_with_labels = np.stack((distances, labels, learned_code_index), axis=-1)
     sorted_distance_with_labels = distance_with_labels[distance_with_labels[:, 0].argsort()]
 
-    sorted_distances = sorted_distance_with_labels[:, 0]
+    sorted_distances = 28 - sorted_distance_with_labels[:, 0]
     sorted_labels = sorted_distance_with_labels[:, 1]
     sorted_indexes = sorted_distance_with_labels[:, 2]
     return sorted_distances, sorted_labels, sorted_indexes
@@ -99,7 +99,7 @@ def retrieve_closest_images(test_element, test_label, n_samples=10):
     distance_with_labels = np.stack((distances, labels, learned_code_index), axis=-1)
     sorted_distance_with_labels = distance_with_labels[distance_with_labels[:, 0].argsort()]
 
-    sorted_distances = sorted_distance_with_labels[:, 0]
+    sorted_distances = 28 - sorted_distance_with_labels[:, 0]
     sorted_labels = sorted_distance_with_labels[:, 1]
     sorted_indexes = sorted_distance_with_labels[:, 2]
     kept_indexes = sorted_indexes[:n_samples]
@@ -116,8 +116,8 @@ def retrieve_closest_images(test_element, test_label, n_samples=10):
     cv2.imshow('Results', retrieved_images)
     cv2.waitKey(0)
 
-    cv2.imwrite('test_results/original_image.jpg', original_image)
-    cv2.imwrite('test_results/retrieved_results.jpg', retrieved_images)
+    cv2.imwrite('test_results/original_image.jpg', 255 * cv2.resize(original_image, (0,0), fx=3, fy=3))
+    cv2.imwrite('test_results/retrieved_results.jpg', 255 * cv2.resize(retrieved_images, (0,0), fx=2, fy=2))
 
 
 def test_model(n_test_samples, n_train_samples):
@@ -131,7 +131,7 @@ def test_model(n_test_samples, n_train_samples):
 
     print('Start computing score for {} train samples'.format(n_train_samples))
     t1 = time.time()
-    score = compute_average_precision_score(test_codes[indexes], y_test[indexes], learned_codes, y_train, n_train_samples)
+    score = compute_average_precision_score(test_codes[indexes], y_test[indexes], learned_codes, n_train_samples)
     t2 = time.time()
     print('Score computed in: ', t2-t1)
     print('Model score:', score)
@@ -147,24 +147,26 @@ def plot_denoised_images():
     resized_output = cv2.resize(output, (280, 280))
     cv2.imshow('output', resized_output)
     cv2.waitKey(0)
-
-
-# To retrieve closes image
-# retrieve_closest_images(x_test[0], y_test[0])
+    cv2.imwrite('test_results/noisy_image.jpg', 255 * resized_test_img)
+    cv2.imwrite('test_results/denoised_image.jpg', 255 * resized_output)
 
 
 # To test the whole model
-# n_test_samples = 1000
-# n_train_samples = [10, 50, 100, 200, 300, 400, 500, 750, 1000, 2000, 3000, 4000, 5000, 6000, 7000, 8000, 9000, 10000,
-#                    20000, 30000, 40000, 50000, 60000]
-#
-#
-# for n_train_sample in n_train_samples:
-#     test_model(n_test_samples, n_train_sample)
-#
-# np.save('computed_data/scores', np.array(scores))
-#
+n_test_samples = 1000
+n_train_samples = [10, 50, 100, 200, 300, 400, 500, 750, 1000, 2000, 3000, 4000, 5000, 6000, 7000, 8000, 9000, 10000,
+                   20000, 30000, 40000, 50000, 60000]
+
+
+for n_train_sample in n_train_samples:
+    test_model(n_test_samples, n_train_sample)
+
+np.save('computed_data/scores', np.array(scores))
+
+
+# To retrieve closest image
+retrieve_closest_images(x_test[0], y_test[0])
+
 
 # To plot a denoised image
-# plot_denoised_images()
+plot_denoised_images()
 
